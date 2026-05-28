@@ -1,0 +1,105 @@
+// ============================================================
+// Kiba Firestore Security Rules
+// Paste this in:
+// Firebase Console → Firestore → Rules tab
+//
+// Roles:
+//   field_advisor — field staff (own data only)
+//   clerk         — office staff (own data only, same as FA)
+//   admin         — full access to everything
+// ============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── Users collection ──────────────────────────────────
+    // FA and Clerk: read/write own profile only
+    // Admin: read/write any profile
+    match /users/{uid} {
+      allow read:  if isSignedIn() && (isOwner(uid) || isAdmin());
+      allow create: if isSignedIn() && isOwner(uid);
+      allow update: if isSignedIn() && (isOwner(uid) || isAdmin());
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // ── Attendance collection ─────────────────────────────
+    // Docs have field: userId (who the record belongs to)
+    // FA and Clerk: read/write only their own records
+    // Admin: full access
+    match /attendance/{docId} {
+      allow read:   if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // ── Leaves collection ─────────────────────────────────
+    // Docs have field: userId (applicant)
+    // FA and Clerk: apply/view own leaves; can update status only if admin
+    // Admin: full access
+    match /leaves/{leaveId} {
+      allow read:   if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // User can only edit their pending leave; admin can edit anything
+      allow update: if isSignedIn() && (
+        (resource.data.userId == request.auth.uid && resource.data.status == 'pending')
+        || isAdmin()
+      );
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // ── Tasks collection ──────────────────────────────────
+    // Docs have field: assignedTo (user uid)
+    // FA and Clerk: read own tasks, update status/notes only
+    // Admin: full access
+    match /tasks/{taskId} {
+      allow read:   if isSignedIn() && (resource.data.assignedTo == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && (
+        isAdmin()
+        || (resource.data.assignedTo == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['status', 'updatedAt', 'notes']))
+      );
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // ── Teams collection ──────────────────────────────────
+    // All signed-in users can read their team info
+    // Only admin can modify teams
+    match /teams/{teamId} {
+      allow read:  if isSignedIn();
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    // ── Notifications collection ──────────────────────────
+    // Docs have field: userId (recipient)
+    // Users see own notifications; admin sees all
+    match /notifications/{notifId} {
+      allow read:   if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isAdmin();
+      // Users can mark their own notifications as read
+      allow update: if isSignedIn() && (
+        isAdmin()
+        || (resource.data.userId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['read', 'readAt']))
+      );
+      allow delete: if isSignedIn() && isAdmin();
+    }
+  }
+}

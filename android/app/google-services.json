@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "899385686181",
+    "project_id": "kiba-3f0fa",
+    "storage_bucket": "kiba-3f0fa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:899385686181:android:62cc5125cb9868485fb54c",
+        "android_client_info": {
+          "package_name": "com.kiba.kiba_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAduv74JSlASL-cwEmwtkSpcWcdfYaeBHY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
