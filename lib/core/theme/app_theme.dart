@@ -238,6 +238,172 @@ class KibaTheme {
     );
   }
 
+  // ── Field Advisor Theme — Emerald Green ────────────────────────────────────
+  static ThemeData get fieldAdvisor {
+    const primary = Color(0xFF059669);      // Emerald 600
+    const onPrimary = Colors.white;
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: Brightness.light,
+        primary: primary,
+        secondary: const Color(0xFFF59E0B),
+        surface: KibaColors.surfaceLight,
+        error: KibaColors.error,
+        onPrimary: onPrimary,
+      ),
+      scaffoldBackgroundColor: KibaColors.bgLight,
+      textTheme: _buildTextTheme(Colors.black),
+      appBarTheme: AppBarTheme(
+        backgroundColor: primary,
+        foregroundColor: onPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: KibaColors.surfaceLight,
+        indicatorColor: primary.withValues(alpha: 0.15),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return IconThemeData(color: primary);
+          }
+          return IconThemeData(color: KibaColors.grey400);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return KibaTextStyles.labelSmall.copyWith(color: primary);
+          }
+          return KibaTextStyles.labelSmall.copyWith(color: KibaColors.grey400);
+        }),
+      ),
+      elevatedButtonTheme: _elevatedButtonTheme(primary: primary),
+      cardTheme: CardThemeData(
+        color: KibaColors.surfaceLight,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: KibaColors.grey200),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      extensions: const [KibaColorExtension.light],
+    );
+  }
+
+  // ── Clerk Theme — Sky Blue ─────────────────────────────────────────────────
+  static ThemeData get clerk {
+    const primary = Color(0xFF2563EB);      // Blue 600
+    const onPrimary = Colors.white;
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: Brightness.light,
+        primary: primary,
+        secondary: const Color(0xFF0EA5E9),
+        surface: KibaColors.surfaceLight,
+        error: KibaColors.error,
+        onPrimary: onPrimary,
+      ),
+      scaffoldBackgroundColor: KibaColors.bgLight,
+      textTheme: _buildTextTheme(Colors.black),
+      appBarTheme: AppBarTheme(
+        backgroundColor: primary,
+        foregroundColor: onPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: KibaColors.surfaceLight,
+        indicatorColor: primary.withValues(alpha: 0.15),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return IconThemeData(color: primary);
+          }
+          return IconThemeData(color: KibaColors.grey400);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return KibaTextStyles.labelSmall.copyWith(color: primary);
+          }
+          return KibaTextStyles.labelSmall.copyWith(color: KibaColors.grey400);
+        }),
+      ),
+      elevatedButtonTheme: _elevatedButtonTheme(primary: primary),
+      cardTheme: CardThemeData(
+        color: KibaColors.surfaceLight,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: KibaColors.grey200),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      extensions: const [KibaColorExtension.light],
+    );
+  }
+
+  // ── Admin Theme — Deep Indigo / Purple ────────────────────────────────────
+  static ThemeData get admin {
+    const primary = Color(0xFF4F46E5);       // Indigo 600
+    const onPrimary = Colors.white;
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: Brightness.light,
+        primary: primary,
+        secondary: const Color(0xFF7C3AED),  // Violet
+        surface: KibaColors.surfaceLight,
+        error: KibaColors.error,
+        onPrimary: onPrimary,
+      ),
+      scaffoldBackgroundColor: KibaColors.bgLight,
+      textTheme: _buildTextTheme(Colors.black),
+      appBarTheme: AppBarTheme(
+        backgroundColor: primary,
+        foregroundColor: onPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: KibaColors.surfaceLight,
+        indicatorColor: primary.withValues(alpha: 0.15),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return IconThemeData(color: primary);
+          }
+          return IconThemeData(color: KibaColors.grey400);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return KibaTextStyles.labelSmall.copyWith(color: primary);
+          }
+          return KibaTextStyles.labelSmall.copyWith(color: KibaColors.grey400);
+        }),
+      ),
+      elevatedButtonTheme: _elevatedButtonTheme(primary: primary),
+      cardTheme: CardThemeData(
+        color: KibaColors.surfaceLight,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: KibaColors.grey200),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      extensions: const [KibaColorExtension.light],
+    );
+  }
+
+
   static TextTheme _buildTextTheme(Color color) {
     return TextTheme(
       displayLarge: KibaTextStyles.displayLarge.copyWith(color: color),
@@ -255,10 +421,11 @@ class KibaTheme {
     );
   }
 
-  static ElevatedButtonThemeData _elevatedButtonTheme() {
+  static ElevatedButtonThemeData _elevatedButtonTheme({Color? primary}) {
+    final bg = primary ?? KibaColors.primary;
     return ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: KibaColors.primary,
+        backgroundColor: bg,
         foregroundColor: Colors.white,
         elevation: 0,
         minimumSize: const Size(double.infinity, 52),

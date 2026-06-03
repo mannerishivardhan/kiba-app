@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kiba_app/core/constants/app_constants.dart';
 import 'package:kiba_app/core/router/app_router.dart';
+import 'package:kiba_app/features/auth/domain/auth_providers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ── Brand colours (self-contained so splash has zero external deps) ──────────
 const _navy = Color(0xFF1E3A8A);   // badge fill
@@ -50,8 +53,29 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) context.go(AppRoutes.onboarding);
+    // Let the animation breathe
+    await Future.delayed(const Duration(milliseconds: 2800));
+    if (!mounted) return;
+
+    // Try to restore an existing Firebase Auth session
+    await ref.read(authNotifierProvider.notifier).restoreSession();
+    if (!mounted) return;
+
+    final user = ref.read(currentUserProvider);
+
+    if (user != null) {
+      // Router redirect will pick the right screen based on user.status + role
+      context.go(AppRoutes.splash);
+      return;
+    }
+
+    // No session — check if onboarding was already completed
+    final prefs = await SharedPreferences.getInstance();
+    final onboardingDone =
+        prefs.getBool(AppConstants.keyOnboardingDone) ?? false;
+
+    if (!mounted) return;
+    context.go(onboardingDone ? AppRoutes.login : AppRoutes.onboarding);
   }
 
   @override

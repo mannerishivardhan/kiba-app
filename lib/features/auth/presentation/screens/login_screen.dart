@@ -48,7 +48,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Listen and react to auth state changes
     ref.listen<AuthState>(authNotifierProvider, (prev, next) {
       if (next is AuthSuccess) {
-        context.go(AppRoutes.home);
+        // Router guard handles role-based redirect automatically
+        // Just go to root and let redirect() pick the correct dashboard
+        context.go('/');
       } else if (next is AuthError) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
@@ -160,9 +162,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
-                    onTap: () {
-                      // TODO: navigate to forgot password
-                    },
+                    onTap: () => context.push(AppRoutes.forgotPassword),
                     child: const Text(
                       'Forgot Password?',
                       style: TextStyle(
@@ -240,6 +240,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 28),
 
+                // ── Register link ───────────────────────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account? ",
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        color: _hint,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => context.push(AppRoutes.register),
+                      child: const Text(
+                        'Register',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: _navy,
+                          decoration: TextDecoration.underline,
+                          decorationColor: _navy,
+                        ),
+                      ),
+                    ),
+                  ],
+                ).animate(delay: 480.ms).fadeIn(),
+
+                const SizedBox(height: 20),
+
                 // ── Tagline ─────────────────────────────────────────────────
                 Text(
                   'Behind the success of farmer',
@@ -249,7 +280,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     fontStyle: FontStyle.italic,
                     color: _hint,
                   ),
-                ).animate(delay: 500.ms).fadeIn(),
+                ).animate(delay: 520.ms).fadeIn(),
 
                 const SizedBox(height: 40),
               ],

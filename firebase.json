@@ -1,1 +1,34 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"kiba-3f0fa","appId":"1:899385686181:android:62cc5125cb9868485fb54c","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"kiba-3f0fa","appId":"1:899385686181:ios:03c1e2ba19d5e2015fb54c","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"kiba-3f0fa","configurations":{"android":"1:899385686181:android:62cc5125cb9868485fb54c","ios":"1:899385686181:ios:03c1e2ba19d5e2015fb54c"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "kiba-3f0fa",
+          "appId": "1:899385686181:android:62cc5125cb9868485fb54c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "kiba-3f0fa",
+          "appId": "1:899385686181:ios:03c1e2ba19d5e2015fb54c",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "kiba-3f0fa",
+          "configurations": {
+            "android": "1:899385686181:android:62cc5125cb9868485fb54c",
+            "ios": "1:899385686181:ios:03c1e2ba19d5e2015fb54c"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

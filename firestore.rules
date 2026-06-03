@@ -1,105 +1,199 @@
-// ============================================================
-// Kiba Firestore Security Rules
-// Paste this in:
-// Firebase Console → Firestore → Rules tab
-//
-// Roles:
-//   field_advisor — field staff (own data only)
-//   clerk         — office staff (own data only, same as FA)
-//   admin         — full access to everything
-// ============================================================
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Helper functions ──────────────────────────────────
+    // ── Helper functions ──────────────────────────────────────────────────────
+
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isOwner(uid) {
-      return request.auth.uid == uid;
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data;
+    }
+
+    // A fully activated account — approved + active
+    function isApproved() {
+      return isSignedIn()
+        && userDoc(request.auth.uid).status   == 'approved'
+        && userDoc(request.auth.uid).isActive == true;
     }
 
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isApproved()
+        && userDoc(request.auth.uid).role == 'admin';
     }
 
-    // ── Users collection ──────────────────────────────────
-    // FA and Clerk: read/write own profile only
-    // Admin: read/write any profile
+    // Fields that only admins may change — users can never self-modify these
+    function adminOnlyFields() {
+      return ['role', 'status', 'isActive', 'uid', 'email',
+              'employeeId', 'approvedAt', 'approvedBy'];
+    }
+
+    // ── users/{uid} ───────────────────────────────────────────────────────────
     match /users/{uid} {
-      allow read:  if isSignedIn() && (isOwner(uid) || isAdmin());
-      allow create: if isSignedIn() && isOwner(uid);
-      allow update: if isSignedIn() && (isOwner(uid) || isAdmin());
-      allow delete: if isSignedIn() && isAdmin();
+
+      // Read own doc (pending users need this for PendingApprovalScreen listener)
+      // Admins can read all
+      allow read: if isOwner(uid) || isAdmin();
+
+      // Self-registration: only the registering user, only as pending+inactive
+      // Admins cannot self-register as admin through this path
+      allow create: if isOwner(uid)
+        && request.resource.data.uid      == uid
+        && request.resource.data.status   == 'pending'
+        && request.resource.data.isActive == false
+        && request.resource.data.role     in ['field_advisor', 'clerk']
+        && request.resource.data.keys().hasAll([
+             'uid', 'email', 'displayName', 'phone', 'gender', 'age',
+             'role', 'aadharNo', 'panCard',
+             'emergencyContactName', 'emergencyContactPhone',
+             'address', 'status', 'isActive', 'createdAt'
+           ]);
+
+      // Profile update (self): approved + active users can update their own
+      // profile but are blocked from touching locked admin-only fields
+      allow update: if isOwner(uid)
+        && isApproved()
+        && !request.resource.data.diff(resource.data)
+               .affectedKeys().hasAny(adminOnlyFields());
+
+      // Admin: full control over any user doc (approvals, role changes, etc.)
+      allow update: if isAdmin();
+
+      // Only admins can delete
+      allow delete: if isAdmin();
     }
 
-    // ── Attendance collection ─────────────────────────────
-    // Docs have field: userId (who the record belongs to)
-    // FA and Clerk: read/write only their own records
-    // Admin: full access
-    match /attendance/{docId} {
-      allow read:   if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow delete: if isSignedIn() && isAdmin();
+    // ── attendance/{uid}/months/{month} ──────────────────────────────────────
+    match /attendance/{uid} {
+      allow read, write: if (isOwner(uid) && isApproved()) || isAdmin();
+
+      match /months/{month} {
+        allow read:  if (isOwner(uid) && isApproved()) || isAdmin();
+        allow write: if (isOwner(uid) && isApproved()) || isAdmin();
+      }
     }
 
-    // ── Leaves collection ─────────────────────────────────
-    // Docs have field: userId (applicant)
-    // FA and Clerk: apply/view own leaves; can update status only if admin
-    // Admin: full access
+    // ── visits/{visitId} ─────────────────────────────────────────────────────
+    match /visits/{visitId} {
+      allow create: if isApproved()
+        && request.resource.data.uid == request.auth.uid;
+
+      allow read: if isAdmin()
+        || (isApproved() && resource.data.uid == request.auth.uid);
+
+      allow update: if isAdmin()
+        || (isApproved() && resource.data.uid == request.auth.uid);
+
+      allow delete: if isAdmin();
+    }
+
+    // ── leaves/{leaveId} ─────────────────────────────────────────────────────
     match /leaves/{leaveId} {
-      allow read:   if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // User can only edit their pending leave; admin can edit anything
-      allow update: if isSignedIn() && (
-        (resource.data.userId == request.auth.uid && resource.data.status == 'pending')
-        || isAdmin()
-      );
-      allow delete: if isSignedIn() && isAdmin();
+      allow create: if isApproved()
+        && request.resource.data.uid == request.auth.uid;
+
+      allow read: if isAdmin()
+        || (isApproved() && resource.data.uid == request.auth.uid);
+
+      // FA can only cancel a leave they own while it's still pending
+      allow update: if isAdmin()
+        || (isApproved()
+            && resource.data.uid    == request.auth.uid
+            && resource.data.status == 'pending'
+            && request.resource.data.diff(resource.data)
+                   .affectedKeys().hasOnly(['status', 'updatedAt']));
+
+      allow delete: if isAdmin();
     }
 
-    // ── Tasks collection ──────────────────────────────────
-    // Docs have field: assignedTo (user uid)
-    // FA and Clerk: read own tasks, update status/notes only
-    // Admin: full access
+    // ── tasks/{taskId} ────────────────────────────────────────────────────────
     match /tasks/{taskId} {
-      allow read:   if isSignedIn() && (resource.data.assignedTo == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && (
-        isAdmin()
-        || (resource.data.assignedTo == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys()
-               .hasOnly(['status', 'updatedAt', 'notes']))
-      );
-      allow delete: if isSignedIn() && isAdmin();
+      allow create, delete: if isAdmin();
+
+      allow read: if isAdmin()
+        || (isApproved() && resource.data.assigneeUid == request.auth.uid);
+
+      allow update: if isAdmin()
+        || (isApproved()
+            && resource.data.assigneeUid == request.auth.uid
+            && request.resource.data.diff(resource.data)
+                   .affectedKeys().hasOnly(['status', 'notes', 'updatedAt']));
     }
 
-    // ── Teams collection ──────────────────────────────────
-    // All signed-in users can read their team info
-    // Only admin can modify teams
+    // ── alerts/{alertId} ─────────────────────────────────────────────────────
+    // FA/Clerk writes own alerts (late check-in, early checkout, etc.)
+    // Admin reads all, marks as read
+    match /alerts/{alertId} {
+      allow create: if isApproved()
+        && request.resource.data.uid == request.auth.uid;
+
+      allow read: if isAdmin()
+        || (isApproved() && resource.data.uid == request.auth.uid);
+
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data)
+               .affectedKeys().hasOnly(['isRead', 'readBy', 'readAt']);
+
+      allow delete: if isAdmin();
+    }
+
+    // ── counters/{doc} ───────────────────────────────────────────────────────
+    // Holds auto-increment sequences for employeeId generation.
+    // Only admins (via approveUser server-side logic) ever write here.
+    match /counters/{doc} {
+      allow read:  if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ── settings/{doc} ────────────────────────────────────────────────────────
+    // All approved users can read thresholds; only admin writes
+    match /settings/{doc} {
+      allow read:  if isApproved();
+      allow write: if isAdmin();
+    }
+
+    // ── live_locations/{uid} ─────────────────────────────────────────────────
+    match /live_locations/{uid} {
+      allow read:  if isAdmin();
+      allow write: if isOwner(uid) && isApproved();
+    }
+
+    // ── location_logs/{uid}/days/{date}/points/{pointId} ─────────────────────
+    match /location_logs/{uid} {
+      allow read: if isAdmin();
+
+      match /days/{date}/points/{pointId} {
+        allow read:   if isAdmin();
+        allow create: if isOwner(uid) && isApproved();
+      }
+    }
+
+    // ── teams/{teamId} ───────────────────────────────────────────────────────
     match /teams/{teamId} {
-      allow read:  if isSignedIn();
-      allow write: if isSignedIn() && isAdmin();
+      allow read:  if isApproved();
+      allow write: if isAdmin();
     }
 
-    // ── Notifications collection ──────────────────────────
-    // Docs have field: userId (recipient)
-    // Users see own notifications; admin sees all
+    // ── notifications/{notifId} ──────────────────────────────────────────────
     match /notifications/{notifId} {
-      allow read:   if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && isAdmin();
-      // Users can mark their own notifications as read
-      allow update: if isSignedIn() && (
-        isAdmin()
-        || (resource.data.userId == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys()
-               .hasOnly(['read', 'readAt']))
-      );
-      allow delete: if isSignedIn() && isAdmin();
+      allow read: if isAdmin()
+        || (isApproved() && resource.data.userId == request.auth.uid);
+
+      allow create: if isAdmin();
+
+      allow update: if isAdmin()
+        || (isApproved()
+            && resource.data.userId == request.auth.uid
+            && request.resource.data.diff(resource.data)
+                   .affectedKeys().hasOnly(['read', 'readAt']));
+
+      allow delete: if isAdmin();
     }
   }
 }

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kiba_app/core/constants/app_constants.dart';
 import 'package:kiba_app/core/router/app_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
-const _navy = Color(0xFF1E3A8A);
-const _gold = Color(0xFFE8A020);
+const _navy  = Color(0xFF1E3A8A);
+const _gold  = Color(0xFFE8A020);
 const _white = Colors.white;
 
 // ── Page data ─────────────────────────────────────────────────────────────────
@@ -72,7 +74,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _finish() => context.go(AppRoutes.login);
+  Future<void> _finish() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppConstants.keyOnboardingDone, true);
+    if (mounted) context.go(AppRoutes.login);
+  }
 
   @override
   void dispose() {
