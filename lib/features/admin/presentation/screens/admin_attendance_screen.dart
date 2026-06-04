@@ -1202,7 +1202,7 @@ class _EmployeeCalendarSheetState
   @override
   Widget build(BuildContext context) {
     final color = widget.user.isFieldAdvisor ? _faGreen : _clBlue;
-    final key   = (uid: widget.user.uid, year: _year, month: _month);
+    final key   = (uid: widget.user.employeeId ?? widget.user.uid, year: _year, month: _month);
     final async = ref.watch(adminEmployeeMonthProvider(key));
 
     return Container(
@@ -2741,7 +2741,7 @@ class _DayOverrideSheetState extends ConsumerState<_DayOverrideSheet> {
       final adminName =
           ref.read(currentUserProvider)?.displayName ?? 'Admin';
       await ref.read(adminAttRepoProvider).overrideDay(
-        uid:       widget.user.uid,
+        uid:       widget.user.employeeId ?? widget.user.uid,
         year:      widget.year,
         month:     widget.month,
         day:       widget.date.day,
@@ -2773,7 +2773,7 @@ class _DayOverrideSheetState extends ConsumerState<_DayOverrideSheet> {
     setState(() => _isClearing = true);
     try {
       await ref.read(adminAttRepoProvider).clearOverride(
-        uid:   widget.user.uid,
+        uid:   widget.user.employeeId ?? widget.user.uid,
         year:  widget.year,
         month: widget.month,
         day:   widget.date.day,

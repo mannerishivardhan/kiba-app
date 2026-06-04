@@ -153,14 +153,15 @@ class AttendanceCalendarNotifier
 
   final Ref _ref;
 
-  String? get _uid => _ref.read(currentUserProvider)?.uid;
+  String? get _uid   => _ref.read(currentUserProvider)?.uid;
+  String? get _empId => _ref.read(currentUserProvider)?.employeeId;
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
   /// SWR: serve cache instantly → fetch server in background → update if different.
   Future<void> loadMonth(int year, int month) async {
-    final uid = _uid;
-    if (uid == null) return;
+    final empId = _empId;
+    if (empId == null) return;
 
     state = state.copyWith(
       year: year, month: month,
@@ -168,7 +169,7 @@ class AttendanceCalendarNotifier
       isLoading: true, isRefreshing: false,
     );
 
-    final docRef = MonthlyAttendanceDoc.ref(uid, year, month);
+    final docRef = MonthlyAttendanceDoc.ref(empId, year, month);
 
     // ── Step 1: Serve from disk cache instantly ────────────────────────────
     // UI renders immediately — no loading spinner for returning users.
@@ -241,8 +242,9 @@ class AttendanceCalendarNotifier
     bool isEarlyCheckout = false,
     String? checkoutReason,
   }) async {
-    final uid = _uid;
-    if (uid == null) return;
+    final uid   = _uid;
+    final empId = _empId;
+    if (uid == null || empId == null) return;
 
     final today = DateTime.now();
     final t     = _ref.read(thresholdProvider).valueOrNull
@@ -298,7 +300,7 @@ class AttendanceCalendarNotifier
     );
 
     // Write to Firestore — 1 write, merged into the monthly document.
-    await MonthlyAttendanceDoc.ref(uid, today.year, today.month).set(
+    await MonthlyAttendanceDoc.ref(empId, today.year, today.month).set(
       {'days': {today.day.toString(): record.toMap()}},
       SetOptions(merge: true),
     );

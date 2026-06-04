@@ -42,17 +42,19 @@ class LocationTrackingNotifier
   LocationTrackingNotifier(this._db) : super(const LocationTrackingState());
 
   final FirebaseFirestore _db;
-  Timer? _timer;
-  String? _uid;
+  Timer?  _timer;
+  String? _docId;    // employeeId — used as Firestore doc key
+  String? _authUid;  // Firebase Auth UID — stored as field value
   String? _name;
 
   // Write to Firestore every 3 minutes while FA is on duty.
   static const _interval = Duration(minutes: 3);
 
   /// Call after successful check-in. GPS must already be confirmed available.
-  void startTracking(String uid, String name) {
-    _uid  = uid;
-    _name = name;
+  void startTracking(String employeeId, String uid, String name) {
+    _docId   = employeeId;
+    _authUid = uid;
+    _name    = name;
     state = state.copyWith(isTracking: true);
 
     _captureAndWrite(); // immediate first write
@@ -64,14 +66,15 @@ class LocationTrackingNotifier
   Future<void> stopTracking() async {
     _timer?.cancel();
     _timer = null;
-    final uid = _uid;
-    _uid  = null;
-    _name = null;
+    final docId = _docId;
+    _docId   = null;
+    _authUid = null;
+    _name    = null;
 
     // Mark FA as offline in live_locations
-    if (uid != null) {
+    if (docId != null) {
       try {
-        await _db.collection('live_locations').doc(uid).update({
+        await _db.collection('live_locations').doc(docId).update({
           'is_active':  false,
           'updated_at': Timestamp.fromDate(DateTime.now()),
         });
@@ -82,17 +85,18 @@ class LocationTrackingNotifier
   }
 
   Future<void> _captureAndWrite() async {
-    final uid  = _uid;
-    final name = _name;
-    if (uid == null || name == null) return;
+    final docId   = _docId;
+    final authUid = _authUid;
+    final name    = _name;
+    if (docId == null || name == null) return;
 
     try {
       final pos = await fetchCurrentPosition();
       final now = DateTime.now();
 
       // ── Live location doc (admin heatmap — real-time marker) ──────────────
-      await _db.collection('live_locations').doc(uid).set({
-        'uid':        uid,
+      await _db.collection('live_locations').doc(docId).set({
+        'uid':        authUid ?? docId,
         'name':       name,
         'lat':        pos.latitude,
         'lng':        pos.longitude,
@@ -105,7 +109,7 @@ class LocationTrackingNotifier
       final dateStr = DateFormat('yyyy-MM-dd').format(now);
       await _db
           .collection('location_logs')
-          .doc(uid)
+          .doc(docId)
           .collection('days')
           .doc(dateStr)
           .collection('points')

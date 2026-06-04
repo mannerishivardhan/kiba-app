@@ -1456,7 +1456,7 @@ class _LogVisitSheetState extends ConsumerState<_LogVisitSheet> {
       if (user != null) {
         km = await ref
             .read(visitRepoProvider)
-            .estimateLegDistance(user.uid, pos.latitude, pos.longitude);
+            .estimateLegDistance(user.uid, user.employeeId ?? user.uid, pos.latitude, pos.longitude);
       }
       if (!mounted) return;
       setState(() {
@@ -1525,6 +1525,7 @@ class _LogVisitSheetState extends ConsumerState<_LogVisitSheet> {
     try {
       await ref.read(visitRepoProvider).startVisit(
         uid:             user.uid,
+        employeeId:      user.employeeId ?? user.uid,
         farmerName:      _farmerCtrl.text.trim(),
         pondArea:        _pondArea,
         purpose:         _purpose,

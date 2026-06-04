@@ -72,7 +72,7 @@ class VisitRepository {
   /// Falls back to the check-in location stored in the attendance doc,
   /// then to 0 if neither is available.
   Future<double> estimateLegDistance(
-      String uid, double lat, double lng) async {
+      String uid, String employeeId, double lat, double lng) async {
     // Try last visit with GPS coords today
     final snap = await VisitModel.queryTodayForUser(uid).get();
     final today = snap.docs.map(VisitModel.fromDoc).toList();
@@ -90,7 +90,7 @@ class VisitRepository {
     try {
       final doc = await _db
           .collection('attendance')
-          .doc(uid)
+          .doc(employeeId)
           .collection('months')
           .doc(monthStr)
           .get();
@@ -107,6 +107,7 @@ class VisitRepository {
 
   Future<void> startVisit({
     required String uid,
+    required String employeeId,
     required String farmerName,
     required double pondArea,
     required VisitPurpose purpose,
@@ -126,7 +127,7 @@ class VisitRepository {
         ? await reverseGeocode(pos.latitude, pos.longitude)
         : '';
     final distanceKm  = pos != null
-        ? await estimateLegDistance(uid, pos.latitude, pos.longitude)
+        ? await estimateLegDistance(uid, employeeId, pos.latitude, pos.longitude)
         : 0.0;
 
     final now = DateTime.now();
@@ -153,7 +154,7 @@ class VisitRepository {
     await _db.collection('visits').doc(id).set(visit.toMap());
 
     // Atomically accumulate km on today's attendance record
-    await _addKmToAttendance(uid, distanceKm);
+    await _addKmToAttendance(employeeId, distanceKm);
   }
 
   Future<void> endVisit({
@@ -169,7 +170,7 @@ class VisitRepository {
 
   // ── Private ───────────────────────────────────────────────────────────────
 
-  Future<void> _addKmToAttendance(String uid, double km) async {
+  Future<void> _addKmToAttendance(String employeeId, double km) async {
     if (km <= 0) return;
     final now      = DateTime.now();
     final monthStr = DateFormat('yyyy-MM').format(now);
@@ -177,7 +178,7 @@ class VisitRepository {
     try {
       await _db
           .collection('attendance')
-          .doc(uid)
+          .doc(employeeId)
           .collection('months')
           .doc(monthStr)
           .update({'days.$dayStr.km_covered': FieldValue.increment(km)});
@@ -185,7 +186,7 @@ class VisitRepository {
       // Attendance doc doesn't exist yet — create it with this km entry.
       await _db
           .collection('attendance')
-          .doc(uid)
+          .doc(employeeId)
           .collection('months')
           .doc(monthStr)
           .set(

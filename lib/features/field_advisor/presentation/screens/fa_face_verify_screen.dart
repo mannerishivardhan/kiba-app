@@ -148,7 +148,7 @@ class _FAFaceVerifyScreenState extends ConsumerState<FAFaceVerifyScreen>
         );
         if (user != null) {
           ref.read(locationTrackingProvider.notifier)
-              .startTracking(user.uid, user.displayName);
+              .startTracking(user.employeeId ?? user.uid, user.uid, user.displayName);
         }
       }
 

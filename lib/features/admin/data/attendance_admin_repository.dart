@@ -88,7 +88,7 @@ class AttendanceAdminRepository {
       List<UserModel> employees, int year, int month) async {
     final results = <String, Map<int, DayRecord>>{};
     await Future.wait(employees.map((u) async {
-      final snap = await MonthlyAttendanceDoc.ref(u.uid, year, month).get();
+      final snap = await MonthlyAttendanceDoc.ref(u.employeeId ?? u.uid, year, month).get();
       results[u.uid] = snap.exists && snap.data() != null
           ? MonthlyAttendanceDoc.parse(snap.data()!, year, month)
           : {};
