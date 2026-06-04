@@ -54,7 +54,7 @@ class FAHomeScreen extends ConsumerWidget {
     final todayOnly = DateTime(now.year, now.month, now.day);
     final isOnLeave = todayStatus == AttendanceStatus.leave ||
         leaves.any((l) {
-          if (l.status == LeaveStatus.declined) return false;
+          if (l.status != LeaveStatus.approved) return false;
           final from = DateTime(l.fromDate.year, l.fromDate.month, l.fromDate.day);
           final to   = DateTime(l.toDate.year,   l.toDate.month,   l.toDate.day);
           return !todayOnly.isBefore(from) && !todayOnly.isAfter(to);
