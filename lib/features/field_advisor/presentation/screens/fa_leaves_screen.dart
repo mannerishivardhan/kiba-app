@@ -1205,12 +1205,13 @@ class _ApplyLeaveSheetState extends ConsumerState<_ApplyLeaveSheet> {
 
     try {
       await ref.read(leaveRepoProvider).apply(
-        uid:      user.uid,
-        userName: user.displayName,
-        type:     _type,
-        fromDate: _from,
-        toDate:   _to,
-        reason:   reason,
+        uid:        user.uid,
+        employeeId: user.employeeId ?? user.uid,
+        userName:   user.displayName,
+        type:       _type,
+        fromDate:   _from,
+        toDate:     _to,
+        reason:     reason,
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {

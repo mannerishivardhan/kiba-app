@@ -11,6 +11,7 @@ class LeaveRepository {
 
   Future<void> apply({
     required String uid,
+    required String employeeId,
     required String userName,
     required LeaveType type,
     required DateTime fromDate,
@@ -26,9 +27,10 @@ class LeaveRepository {
         : LeaveStatus.approved;
 
     final leave = LeaveModel(
-      id:        docRef.id,
-      uid:       uid,
-      userName:  userName,
+      id:         docRef.id,
+      uid:        uid,
+      employeeId: employeeId,
+      userName:   userName,
       type:      type,
       fromDate:  _dateOnly(fromDate),
       toDate:    _dateOnly(toDate),
@@ -141,7 +143,7 @@ class LeaveRepository {
       final parts = entry.key.split('-');
       final year  = int.parse(parts[0]);
       final month = int.parse(parts[1]);
-      final ref   = MonthlyAttendanceDoc.ref(leave.uid, year, month);
+      final ref   = MonthlyAttendanceDoc.ref(leave.employeeId ?? leave.uid, year, month);
       // mergeFields: update only the specific day paths, leave everything else.
       final mergeFields = entry.value.keys
           .map((d) => FieldPath(['days', d]))

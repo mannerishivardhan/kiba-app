@@ -111,6 +111,7 @@ class LeaveModel {
   const LeaveModel({
     required this.id,
     required this.uid,
+    this.employeeId,
     required this.userName,
     required this.type,
     required this.fromDate,
@@ -123,9 +124,10 @@ class LeaveModel {
     this.reviewNote,
   });
 
-  final String id;
-  final String uid;
-  final String userName;
+  final String  id;
+  final String  uid;
+  final String? employeeId;
+  final String  userName;
   final LeaveType type;
   final DateTime fromDate;
   final DateTime toDate;
@@ -178,8 +180,9 @@ class LeaveModel {
     final m = doc.data()!;
     return LeaveModel(
       id:         doc.id,
-      uid:        m['uid']       as String,
-      userName:   m['user_name'] as String? ?? '',
+      uid:        m['uid']         as String,
+      employeeId: m['employee_id'] as String?,
+      userName:   m['user_name']   as String? ?? '',
       type:       LeaveTypeX.fromString(m['type']   as String?),
       status:     LeaveStatusX.fromString(m['status'] as String?),
       fromDate:   (m['from_date'] as Timestamp).toDate(),
@@ -193,8 +196,9 @@ class LeaveModel {
   }
 
   Map<String, dynamic> toMap() => {
-    'uid':        uid,
-    'user_name':  userName,
+    'uid':                    uid,
+    if (employeeId != null) 'employee_id': employeeId,
+    'user_name':              userName,
     'type':       type.value,
     'from_date':  Timestamp.fromDate(fromDate),
     'to_date':    Timestamp.fromDate(toDate),
@@ -209,8 +213,8 @@ class LeaveModel {
   LeaveModel copyWith({LeaveStatus? status, String? reviewedBy,
       DateTime? reviewedAt, String? reviewNote}) {
     return LeaveModel(
-      id: id, uid: uid, userName: userName, type: type,
-      fromDate: fromDate, toDate: toDate, reason: reason,
+      id: id, uid: uid, employeeId: employeeId, userName: userName,
+      type: type, fromDate: fromDate, toDate: toDate, reason: reason,
       appliedAt: appliedAt,
       status:     status     ?? this.status,
       reviewedBy: reviewedBy ?? this.reviewedBy,

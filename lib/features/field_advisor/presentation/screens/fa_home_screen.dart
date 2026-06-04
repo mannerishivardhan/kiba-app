@@ -8,8 +8,10 @@ import 'package:kiba_app/core/models/attendance_threshold.dart';
 import 'package:kiba_app/core/router/app_router.dart';
 import 'package:kiba_app/features/auth/domain/auth_providers.dart';
 import 'package:kiba_app/features/field_advisor/data/day_record.dart';
+import 'package:kiba_app/features/field_advisor/data/leave_model.dart';
 import 'package:kiba_app/features/field_advisor/domain/attendance_calendar_provider.dart';
 import 'package:kiba_app/features/field_advisor/domain/attendance_provider.dart';
+import 'package:kiba_app/features/field_advisor/domain/leave_provider.dart';
 import 'package:kiba_app/features/field_advisor/presentation/widgets/fa_journey_timeline.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -43,8 +45,20 @@ class FAHomeScreen extends ConsumerWidget {
 
     final calState    = ref.watch(attendanceCalendarProvider);
     final todayStatus = calState.records[now.day]?.effectiveStatus;
-    final isOnLeave   = todayStatus == AttendanceStatus.leave;
     final isHoliday   = todayStatus == AttendanceStatus.holiday;
+
+    // On leave if attendance record already reflects it OR there is an
+    // active (pending/approved) leave covering today — catches pending
+    // sick/casual leaves that haven't been mapped to attendance yet.
+    final leaves    = ref.watch(faLeavesProvider).valueOrNull ?? [];
+    final todayOnly = DateTime(now.year, now.month, now.day);
+    final isOnLeave = todayStatus == AttendanceStatus.leave ||
+        leaves.any((l) {
+          if (l.status == LeaveStatus.declined) return false;
+          final from = DateTime(l.fromDate.year, l.fromDate.month, l.fromDate.day);
+          final to   = DateTime(l.toDate.year,   l.toDate.month,   l.toDate.day);
+          return !todayOnly.isBefore(from) && !todayOnly.isAfter(to);
+        });
     final isRestDay   = isOnLeave || isHoliday;
     final summary     = calState.summary;
 
